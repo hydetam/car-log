@@ -282,8 +282,7 @@ function defaultData(){
       {name:'齒輪油', category:'engine', intervalKm:3000, intervalMonths:6, note:'原廠建議每3000公里或6個月更換，以先到者為準'},
       {name:'空氣濾清器', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠建議每1000公里檢查清潔，每5000公里更換濾芯'},
       {name:'火星塞', category:'engine', intervalKm:8000, intervalMonths:12, note:'指定型號 NGK LR7D，間隙0.6–0.7mm'},
-      {name:'煞車來令片', category:'engine', intervalKm:6000, intervalMonths:12, note:'原廠僅列每1000公里檢查週期，實際更換依磨損程度而定'},
-      {name:'煞車油', category:'engine', intervalKm:10000, intervalMonths:12, note:'採用DOT-4煞車油，原廠建議每10000公里或1年更換'},
+      {name:'煞車來令片／煞車蹄片', category:'engine', intervalKm:6000, intervalMonths:12, note:'鼓煞車型，原廠僅列每1000公里檢查週期，實際更換依磨損程度而定；鼓煞無須更換煞車油'},
       {name:'傳動系統（CVT濾綿／滾輪／皮帶）', category:'engine', intervalKm:5000, intervalMonths:6, note:'每5000公里檢查清潔CVT濾綿，皮帶約15000公里視磨損更換'},
       {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12, note:'胎壓：單人前1.75／後2.0，雙人前後2.25 kgf/cm²'},
       {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:12, note:'免保養電瓶，每年測電壓是否≥12V'},
@@ -305,8 +304,14 @@ function defaultData(){
         items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
     ],
     checklists:{
-      daily:{title:'日常檢查', items:['胎壓／外觀檢查','煞車測試','燈號（大燈／方向燈／煞車燈）','油量／電量確認','後照鏡調整'], lastDone:null},
-      trip:{title:'遠門檢查', items:['機油／水箱水位','胎紋深度／胎壓','煞車來令片狀況','雨刷／雨具準備','隨車工具／備胎','保險卡／行照攜帶','加滿油／充飽電','路線／天氣確認'], lastDone:null}
+      car:{
+        daily:{title:'日常檢查', items:['胎壓／外觀檢查','煞車測試','燈號（大燈／方向燈／煞車燈）','油量／電量確認','後照鏡調整','雨刷作動確認'], lastDone:null},
+        trip:{title:'遠門檢查', items:['機油／水箱水位','胎紋深度／胎壓','煞車來令片狀況','雨刷／雨具準備','隨車工具／備胎','保險卡／行照攜帶','加滿油','路線／天氣確認'], lastDone:null}
+      },
+      scooter:{
+        daily:{title:'日常檢查', items:['胎壓／外觀檢查','煞車測試（前後）','燈號（大燈／方向燈／煞車燈）','油量／電量確認','後照鏡調整','主／側腳架收妥確認'], lastDone:null},
+        trip:{title:'遠門檢查', items:['機油油量確認','胎紋深度／胎壓','煞車來令片狀況','雨衣／雨具準備','隨車工具','行照／強制險卡攜帶','加滿油','路線／天氣確認'], lastDone:null}
+      }
     }
   };
 }
@@ -337,6 +342,7 @@ async function loadData(){
     }
   } else {
     DATA = snap.data();
+    if(migrateChecklists()) await docRef.set(DATA);
   }
   currentVehicleId = DATA.vehicles[0].id;
 
@@ -349,6 +355,18 @@ async function loadData(){
     const modalOpen = document.getElementById('modalRoot') && document.getElementById('modalRoot').innerHTML.trim() !== '';
     if(!modalOpen) render();
   });
+}
+
+function migrateChecklists(){
+  if(!DATA.checklists){ DATA.checklists = defaultData().checklists; return true; }
+  if(DATA.checklists.car && DATA.checklists.scooter) return false; // 已經是新格式
+  const old = DATA.checklists;
+  const fallback = {title:'日常檢查', items:[], lastDone:null};
+  DATA.checklists = {
+    car: { daily: old.daily || {...fallback}, trip: old.trip || {title:'遠門檢查', items:[], lastDone:null} },
+    scooter: { daily: JSON.parse(JSON.stringify(old.daily || fallback)), trip: JSON.parse(JSON.stringify(old.trip || {title:'遠門檢查', items:[], lastDone:null})) }
+  };
+  return true;
 }
 
 async function saveData(){
@@ -442,7 +460,10 @@ function render(){
 
       <div class="sec-head">
         <h2>🔧 保養提醒 ${overdueCount>0?`<span class="count-badge">${overdueCount} 項逾期</span>`:''}</h2>
-        <button class="add-link" onclick="openLogModal()">＋ 紀錄保養</button>
+        <div style="display:flex;gap:10px;">
+          <button class="add-link" onclick="openLogHistoryModal()">📖 紀錄</button>
+          <button class="add-link" onclick="openLogModal()">＋ 紀錄保養</button>
+        </div>
       </div>
       <div id="engineItems"></div>
       <div class="cat-divider">法定／行政項目</div>
@@ -591,6 +612,7 @@ function openLogModal(){
     <label class="f-label">保養項目</label>
     ${items}
     <button class="btn-primary" onclick="submitLog()">儲存並自動計算下次時間</button>
+    <button class="btn-secondary" onclick="openLogHistoryModal()">📖 查看／編輯過去的保養紀錄</button>
   `);
 }
 async function submitLog(){
@@ -601,9 +623,89 @@ async function submitLog(){
   const chosen = v.items.filter(it=>document.getElementById('chk_'+it.id).checked);
   if(chosen.length===0){ showToast('請至少勾選一個項目'); return; }
   chosen.forEach(it=>{ it.lastKm = km; it.lastDate = date; });
-  v.logs.push({id:uid(), date, km, itemNames:chosen.map(i=>i.name)});
+  v.logs.push({id:uid(), date, km, itemIds:chosen.map(i=>i.id), itemNames:chosen.map(i=>i.name)});
   if(km > v.odo){ v.odo = km; v.odoDate = date; }
   await saveData(); closeModal(); render(); showToast('已紀錄，下次時間自動算好了');
+}
+
+/* --- 保養紀錄歷史：查看／編輯／刪除 --- */
+function recalcItemFromLogs(v, itemId){
+  const item = v.items.find(i=>i.id===itemId);
+  if(!item) return;
+  const relevant = (v.logs||[]).filter(l=>l.itemIds && l.itemIds.includes(itemId));
+  if(relevant.length===0) return; // 沒有其他紀錄了，保留目前的上次保養資訊，不自動清空
+  relevant.sort((a,b)=> (a.date<b.date?1:a.date>b.date?-1: b.km-a.km));
+  item.lastDate = relevant[0].date;
+  item.lastKm = relevant[0].km;
+}
+let editingLogId = null;
+function openLogHistoryModal(){
+  const v = getVehicle(currentVehicleId);
+  const logs = [...(v.logs||[])].sort((a,b)=> b.date<a.date?-1:b.date>a.date?1:b.km-a.km);
+  openModal(`
+    <div class="modal-title">保養紀錄歷史<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">${v.name} · 點任一筆可以編輯或刪除</div>
+    ${logs.length? logs.map(l=>`
+      <div class="fuel-log-row" onclick="openEditLogModal('${l.id}')">
+        <div class="fuel-log-date">${fmtDate(l.date)}<br>${fmtKm(l.km)} km</div>
+        <div class="fuel-log-mid" style="text-align:right;max-width:60%;">
+          <div style="font-size:12.5px;font-weight:700;">${(l.itemNames||[]).join('、')}</div>
+        </div>
+      </div>
+    `).join('') : `<div class="empty-note">還沒有任何保養紀錄</div>`}
+    <button class="btn-secondary" onclick="openLogModal()" style="margin-top:14px;">← 返回新增紀錄</button>
+  `);
+}
+function openEditLogModal(logId){
+  const v = getVehicle(currentVehicleId);
+  const l = v.logs.find(x=>x.id===logId);
+  if(!l) return;
+  editingLogId = logId;
+  const items = v.items.map(it=>`
+    <div class="check-row">
+      <input type="checkbox" id="echk_${it.id}" ${l.itemIds && l.itemIds.includes(it.id) ? 'checked':''}>
+      <label for="echk_${it.id}">${it.name}</label>
+    </div>
+  `).join('');
+  openModal(`
+    <div class="modal-title">編輯保養紀錄<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">${v.name}</div>
+    <label class="f-label">保養日期</label>
+    <input type="date" id="elogDate" value="${l.date}">
+    <label class="f-label">當時里程（km）</label>
+    <input type="number" id="elogKm" value="${l.km}">
+    <label class="f-label">保養項目</label>
+    ${items}
+    <button class="btn-primary" onclick="submitEditLog()">儲存</button>
+    <div class="btn-ghost-row">
+      <button class="btn-secondary btn-danger" onclick="deleteLogEntry()">刪除這筆紀錄</button>
+      <button class="btn-secondary" onclick="openLogHistoryModal()">返回列表</button>
+    </div>
+  `);
+}
+async function submitEditLog(){
+  const v = getVehicle(currentVehicleId);
+  const l = v.logs.find(x=>x.id===editingLogId);
+  if(!l) return;
+  const date = document.getElementById('elogDate').value || l.date;
+  const km = parseFloat(document.getElementById('elogKm').value);
+  if(isNaN(km) || km<0){ showToast('請輸入正確里程'); return; }
+  const chosen = v.items.filter(it=>document.getElementById('echk_'+it.id).checked);
+  if(chosen.length===0){ showToast('請至少勾選一個項目'); return; }
+  const oldItemIds = l.itemIds || [];
+  l.date = date; l.km = km; l.itemIds = chosen.map(i=>i.id); l.itemNames = chosen.map(i=>i.name);
+  const affected = new Set([...oldItemIds, ...l.itemIds]);
+  affected.forEach(id=>recalcItemFromLogs(v, id));
+  await saveData(); closeModal(); render(); showToast('已更新這筆保養紀錄');
+}
+async function deleteLogEntry(){
+  const v = getVehicle(currentVehicleId);
+  const l = v.logs.find(x=>x.id===editingLogId);
+  if(!l) return;
+  const affected = l.itemIds || [];
+  v.logs = v.logs.filter(x=>x.id!==editingLogId);
+  affected.forEach(id=>recalcItemFromLogs(v, id));
+  await saveData(); closeModal(); render(); showToast('已刪除這筆保養紀錄');
 }
 
 /* --- 編輯單一項目 --- */
@@ -824,15 +926,22 @@ async function deleteFuel(){
 }
 
 /* --- 檢查表 --- */
+let checklistType = 'car';
 let checklistTab = 'daily';
 function openChecklistModal(){
-  checklistTab='daily';
+  const v = getVehicle(currentVehicleId);
+  checklistType = v.type === 'scooter' ? 'scooter' : 'car';
+  checklistTab = 'daily';
   renderChecklistModal();
 }
 function renderChecklistModal(){
-  const cl = DATA.checklists[checklistTab];
+  const cl = DATA.checklists[checklistType][checklistTab];
   openModal(`
     <div class="modal-title">📋 檢查表<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="tabbar">
+      <button class="${checklistType==='car'?'active':''}" onclick="switchChecklistType('car')">🚗 車用</button>
+      <button class="${checklistType==='scooter'?'active':''}" onclick="switchChecklistType('scooter')">🛵 機車用</button>
+    </div>
     <div class="tabbar">
       <button class="${checklistTab==='daily'?'active':''}" onclick="switchChecklistTab('daily')">日常檢查</button>
       <button class="${checklistTab==='trip'?'active':''}" onclick="switchChecklistTab('trip')">遠門檢查</button>
@@ -851,15 +960,17 @@ function renderChecklistModal(){
     </div>
   `);
 }
+function switchChecklistType(type){ checklistType=type; checklistTab='daily'; renderChecklistModal(); }
 function switchChecklistTab(tab){ checklistTab=tab; renderChecklistModal(); }
 async function finishChecklist(){
-  DATA.checklists[checklistTab].lastDone = todayStr();
+  DATA.checklists[checklistType][checklistTab].lastDone = todayStr();
   await saveData(); closeModal(); showToast('已標記完成');
 }
 function openEditChecklistModal(){
-  const cl = DATA.checklists[checklistTab];
+  const cl = DATA.checklists[checklistType][checklistTab];
+  const typeLabel = checklistType==='car' ? '車用' : '機車用';
   openModal(`
-    <div class="modal-title">編輯：${cl.title}<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-title">編輯：${typeLabel}．${cl.title}<button class="modal-close" onclick="closeModal()">✕</button></div>
     <div id="editList">${cl.items.map((t,idx)=>`
       <div class="check-row">
         <input type="text" style="flex:1;border:none;background:transparent;font-size:13.5px;" value="${t}" id="editItem_${idx}">
@@ -875,15 +986,15 @@ function openEditChecklistModal(){
 function addChecklistItem(){
   const val = document.getElementById('newClItem').value.trim();
   if(!val) return;
-  DATA.checklists[checklistTab].items.push(val);
+  DATA.checklists[checklistType][checklistTab].items.push(val);
   openEditChecklistModal();
 }
 function removeChecklistItem(idx){
-  DATA.checklists[checklistTab].items.splice(idx,1);
+  DATA.checklists[checklistType][checklistTab].items.splice(idx,1);
   openEditChecklistModal();
 }
 async function saveChecklistEdits(){
-  const cl = DATA.checklists[checklistTab];
+  const cl = DATA.checklists[checklistType][checklistTab];
   cl.items = cl.items.map((t,idx)=>{
     const el = document.getElementById('editItem_'+idx);
     return el ? el.value.trim() : t;
