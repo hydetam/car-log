@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>保養誌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --ink:#1F2328;
+    --ink-soft:#4A5058;
+    --paper:#F3EEE3;
+    --paper2:#EAE2D0;
+    --card:#FBF8F1;
+    --line:#DCD3BE;
+    --steel:#3B6E9E;
+    --steel-dim:#E4ECF3;
+    --amber:#C97A1F;
+    --amber-dim:#F5E6D0;
+    --plum:#7A5980;
+    --plum-dim:#EDE3EE;
+    --red:#B8433A;
+    --red-dim:#F5DEDB;
+    --green:#4C7A4E;
+    --green-dim:#DEEBDD;
+    --gray-dim:#E4E0D6;
+    --shadow: 0 2px 8px rgba(31,35,40,0.08), 0 1px 2px rgba(31,35,40,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .num{font-family:"Space Mono",monospace;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative;padding-bottom:90px;}
+
+  /* Header */
+  header.topbar{
+    padding:18px 16px 10px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .brand{display:flex;align-items:baseline;gap:8px;}
+  .brand h1{font-size:19px;margin:0;font-weight:900;letter-spacing:0.5px;}
+  .brand span.tag{font-size:10px;color:var(--ink-soft);font-family:"Space Mono",monospace;letter-spacing:1px;text-transform:uppercase;}
+  .icon-btn{
+    width:36px;height:36px;border-radius:10px;border:1px solid var(--line);
+    background:var(--card);display:flex;align-items:center;justify-content:center;
+    font-size:17px;cursor:pointer;color:var(--ink);
+  }
+  .icon-btn:active{transform:scale(0.94);}
+
+  /* Vehicle tabs (keychain tags) */
+  .veh-tabs{display:flex;gap:8px;padding:4px 16px 14px;overflow-x:auto;}
+  .veh-tab{
+    flex:0 0 auto;padding:9px 14px 10px;border-radius:12px 12px 4px 4px;
+    background:var(--paper2);border:1px solid var(--line);border-bottom:3px solid var(--line);
+    font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;
+    display:flex;flex-direction:column;gap:2px;line-height:1.2;
+  }
+  .veh-tab .m{font-size:10px;font-weight:400;opacity:0.75;}
+  .veh-tab.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow);}
+  .veh-tab.active.c-car{border-bottom-color:var(--steel);}
+  .veh-tab.active.c-8316{border-bottom-color:var(--amber);}
+  .veh-tab.active.c-739{border-bottom-color:var(--plum);}
+
+  main{padding:0 16px;}
+
+  /* Odometer signature block */
+  .odo-block{
+    background:var(--ink);color:var(--paper);border-radius:16px;padding:16px 18px;
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;box-shadow:var(--shadow);
+  }
+  .odo-left .odo-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.65;margin-bottom:6px;}
+  .odo-digits{display:flex;gap:3px;}
+  .odo-digit{
+    background:#2B3138;border:1px solid #444C55;border-radius:4px;
+    width:24px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-family:"Space Mono",monospace;font-size:19px;font-weight:700;color:#EFE8D6;
+    box-shadow:inset 0 2px 3px rgba(0,0,0,0.5);
+  }
+  .odo-unit{font-size:11px;margin-left:6px;align-self:flex-end;opacity:0.7;}
+  .odo-date{font-size:10px;opacity:0.55;margin-top:6px;font-family:"Space Mono",monospace;}
+  .odo-update-btn{
+    background:transparent;border:1px solid rgba(243,238,227,0.35);color:var(--paper);
+    border-radius:8px;padding:8px 10px;font-size:11px;cursor:pointer;font-weight:700;white-space:nowrap;
+  }
+
+  /* Section headers */
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;}
+  .sec-head h2{font-size:14px;margin:0;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .sec-head .count-badge{
+    background:var(--red-dim);color:var(--red);font-size:11px;font-weight:700;
+    border-radius:20px;padding:2px 8px;font-family:"Space Mono",monospace;
+  }
+  .add-link{font-size:12px;color:var(--steel);font-weight:700;cursor:pointer;background:none;border:none;padding:4px;}
+
+  /* Maintenance item card */
+  .item-card{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:8px;display:flex;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .item-stub{width:6px;flex:0 0 6px;}
+  .stub-ok{background:var(--green);}
+  .stub-soon{background:var(--amber);}
+  .stub-overdue{background:var(--red);}
+  .stub-unset{background:var(--line);}
+  .item-body{flex:1;padding:11px 12px;cursor:pointer;}
+  .item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .item-name{font-size:14px;font-weight:700;}
+  .item-name .cat-icon{margin-right:5px;}
+  .status-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+  .pill-ok{background:var(--green-dim);color:var(--green);}
+  .pill-soon{background:var(--amber-dim);color:var(--amber);}
+  .pill-overdue{background:var(--red-dim);color:var(--red);}
+  .pill-unset{background:var(--gray-dim);color:var(--ink-soft);}
+  .item-sub{font-size:11.5px;color:var(--ink-soft);margin-top:4px;font-family:"Space Mono",monospace;}
+  .item-bar{height:4px;background:var(--gray-dim);border-radius:3px;margin-top:8px;overflow:hidden;}
+  .item-bar-fill{height:100%;border-radius:3px;}
+
+  .cat-divider{font-size:11px;color:var(--ink-soft);font-weight:700;letter-spacing:1px;margin:14px 0 6px 2px;text-transform:uppercase;}
+
+  /* Fuel section */
+  .fuel-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow);}
+  .fuel-summary{display:flex;align-items:center;justify-content:space-between;}
+  .fuel-avg-num{font-family:"Space Mono",monospace;font-size:26px;font-weight:700;}
+  .fuel-avg-label{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .rating-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;}
+  .fuel-log-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px;}
+  .fuel-log-row:first-of-type{border-top:none;margin-top:8px;padding-top:0;}
+  .fuel-log-date{color:var(--ink-soft);font-family:"Space Mono",monospace;font-size:11px;}
+  .fuel-log-mid{text-align:right;}
+  .fuel-log-kml{font-family:"Space Mono",monospace;font-weight:700;}
+  .empty-note{font-size:12px;color:var(--ink-soft);text-align:center;padding:14px 0;}
+
+  .btn-primary{
+    width:100%;background:var(--ink);color:var(--paper);border:none;border-radius:10px;
+    padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;
+    font-family:"Noto Sans TC",sans-serif;
+  }
+  .btn-primary:active{opacity:0.85;}
+  .btn-secondary{
+    width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+    padding:12px;font-size:13.5px;font-weight:700;cursor:pointer;margin-top:8px;
+  }
+  .btn-ghost-row{display:flex;gap:8px;margin-top:8px;}
+  .btn-ghost-row .btn-secondary{margin-top:0;}
+  .btn-danger{color:var(--red);border-color:var(--red-dim);}
+
+  /* Checklist corner tab */
+  .corner-tab{
+    position:fixed;right:16px;bottom:16px;max-width:448px;
+    background:var(--ink);color:var(--paper);border-radius:14px;
+    padding:12px 16px;box-shadow:0 6px 18px rgba(31,35,40,0.3);
+    display:flex;align-items:center;gap:8px;cursor:pointer;z-index:40;
+    font-size:13px;font-weight:700;
+  }
+  .corner-tab:active{transform:scale(0.96);}
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(31,35,40,0.5);z-index:100;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal-sheet{
+    background:var(--paper);width:100%;max-width:480px;border-radius:18px 18px 0 0;
+    max-height:88vh;overflow-y:auto;padding:18px 18px 26px;position:relative;
+    animation:slideup 0.22s ease-out;
+  }
+  @keyframes slideup{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-title{font-size:16px;font-weight:900;margin:0 0 4px;display:flex;align-items:center;justify-content:space-between;}
+  .modal-close{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;padding:4px;}
+  .modal-sub{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+
+  label.f-label{font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin:12px 0 5px;}
+  input[type=text],input[type=date],input[type=number]{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+    font-size:14px;background:var(--card);color:var(--ink);font-family:"Noto Sans TC",sans-serif;
+  }
+  input[type=number]{font-family:"Space Mono",monospace;}
+  .check-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .check-row:last-child{border-bottom:none;}
+  .check-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--ink);}
+  .check-row label{font-size:13.5px;flex:1;}
+  .tabbar{display:flex;gap:6px;margin-bottom:10px;}
+  .tabbar button{
+    flex:1;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--card);
+    font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink-soft);
+  }
+  .tabbar button.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+  .hint{font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .settings-item-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);}
+  .settings-item-row:last-child{border-bottom:none;}
+  .settings-item-name{font-size:13px;font-weight:700;}
+  .settings-item-sub{font-size:11px;color:var(--ink-soft);font-family:"Space Mono",monospace;margin-top:2px;}
+  .edit-pencil{background:none;border:none;font-size:15px;cursor:pointer;color:var(--ink-soft);padding:4px 6px;}
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);
+    padding:10px 18px;border-radius:20px;font-size:12.5px;font-weight:700;z-index:200;box-shadow:var(--shadow);
+    opacity:0;transition:opacity 0.25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+  .loading-note{text-align:center;padding:60px 20px;color:var(--ink-soft);font-size:13px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="loading" class="loading-note">讀取資料中…</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+/* ===================== 資料層（Firebase）===================== */
+// ⬇️ 把下面六個值換成你自己 Firebase 專案的設定（Project settings → 一般設定 → 你的應用程式）
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDGXOPRVGFeuN3aQXE1ySDijU8gMuJ8tl4",
+  authDomain: "car-log-34adf.firebaseapp.com",
+  projectId: "car-log-34adf",
+  storageBucket: "car-log-34adf.firebasestorage.app",
+  messagingSenderId: "440011414965",
+  appId: "1:440011414965:web:da33999fa0c26af4dd4dfc"
+};
+
+let DATA = null;
+let currentVehicleId = null;
+let db = null;
+let docRef = null;
+let isConfigured = FIREBASE_CONFIG.apiKey !== "請填入你的 API Key";
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function addMonths(dateStr, n){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setMonth(d.getMonth()+n);
+  return d.toISOString().slice(0,10);
+}
+function fmtDate(dateStr){
+  if(!dateStr) return '—';
+  const d = new Date(dateStr+'T00:00:00');
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtKm(n){ return Math.round(n).toLocaleString('en-US'); }
+
+function defaultData(){
+  const today = todayStr();
+  const carItems = [
+    {name:'機油＋機油濾芯', category:'engine', intervalKm:5000, intervalMonths:6},
+    {name:'空氣濾芯', category:'engine', intervalKm:10000, intervalMonths:12},
+    {name:'冷氣濾網', category:'engine', intervalKm:10000, intervalMonths:12},
+    {name:'火星塞', category:'engine', intervalKm:20000, intervalMonths:24},
+    {name:'煞車油', category:'engine', intervalKm:null, intervalMonths:24},
+    {name:'冷卻液（水箱水）', category:'engine', intervalKm:40000, intervalMonths:24},
+    {name:'雨刷', category:'engine', intervalKm:null, intervalMonths:12},
+    {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:24},
+    {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48},
+    {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:6, note:'車齡逾10年，每年須驗車2次（每6個月）'},
+    {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'每年4月繳納'},
+    {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'每年7月繳納'},
+    {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
+  ];
+  function scooterItems(){
+    return [
+      {name:'機油', category:'engine', intervalKm:1500, intervalMonths:3},
+      {name:'齒輪油', category:'engine', intervalKm:5000, intervalMonths:6},
+      {name:'空濾', category:'engine', intervalKm:4000, intervalMonths:6},
+      {name:'火星塞', category:'engine', intervalKm:8000, intervalMonths:12},
+      {name:'煞車來令片', category:'engine', intervalKm:6000, intervalMonths:12},
+      {name:'傳動皮帶', category:'engine', intervalKm:15000, intervalMonths:24},
+      {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12},
+      {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18},
+      {name:'排氣定期檢驗', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡滿5年才需每年檢驗一次'},
+      {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'所有機車每年7月都要繳，不分排氣量'},
+      {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
+      {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'僅排氣量超過150c.c.需繳納'},
+    ];
+  }
+  function mkItems(list){
+    return list.map(it=>({id:uid(), lastKm:null, lastDate:null, ...it}));
+  }
+  return {
+    vehicles:[
+      {id:'v1', name:'小藍', model:'Kia Morning 2008', type:'car', color:'car', odo:0, odoDate:today, createdAt:today,
+        items:mkItems(carItems), logs:[], fuelLogs:[], fuelBenchmark:{good:13, bad:10}},
+      {id:'v2', name:'機車8316', model:'2023 光陽 SZ25AA', type:'scooter', color:'8316', odo:0, odoDate:today, createdAt:today,
+        items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:38, bad:28}},
+      {id:'v3', name:'機車739', model:'', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
+        items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
+    ],
+    checklists:{
+      daily:{title:'日常檢查', items:['胎壓／外觀檢查','煞車測試','燈號（大燈／方向燈／煞車燈）','油量／電量確認','後照鏡調整'], lastDone:null},
+      trip:{title:'遠門檢查', items:['機油／水箱水位','胎紋深度／胎壓','煞車來令片狀況','雨刷／雨具準備','隨車工具／備胎','保險卡／行照攜帶','加滿油／充飽電','路線／天氣確認'], lastDone:null}
+    }
+  };
+}
+
+function initFirebase(){
+  const app = firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  docRef = db.collection('appdata').doc('main');
+  return new Promise((resolve, reject)=>{
+    firebase.auth().onAuthStateChanged(user=>{
+      if(user) resolve();
+    });
+    firebase.auth().signInAnonymously().catch(reject);
+  });
+}
+
+let suppressNextSnapshot = false;
+async function loadData(){
+  const snap = await docRef.get();
+  if(snap.exists){
+    DATA = snap.data();
+  } else {
+    DATA = defaultData();
+    await docRef.set(DATA);
+  }
+  currentVehicleId = DATA.vehicles[0].id;
+
+  // 即時監聽：另一支手機存檔後，這裡會自動收到最新資料
+  docRef.onSnapshot(snap=>{
+    if(!snap.exists) return;
+    if(suppressNextSnapshot){ suppressNextSnapshot=false; return; }
+    DATA = snap.data();
+    if(!getVehicle(currentVehicleId)) currentVehicleId = DATA.vehicles[0].id;
+    const modalOpen = document.getElementById('modalRoot') && document.getElementById('modalRoot').innerHTML.trim() !== '';
+    if(!modalOpen) render();
+  });
+}
+
+async function saveData(){
+  try{
+    suppressNextSnapshot = true; // 避免自己存完馬上被自己的監聽器重繪一次
+    await docRef.set(DATA);
+  }catch(e){
+    showToast('儲存失敗，請檢查網路或 Firebase 設定');
+  }
+}
+
+function getVehicle(id){ return DATA.vehicles.find(v=>v.id===id); }
+
+/* ===================== 狀態計算 ===================== */
+function itemStatus(item, vehicle){
+  if(item.lastKm==null && !item.lastDate){
+    return {state:'unset'};
+  }
+  let kmInfo=null, dateInfo=null;
+  if(item.intervalKm){
+    const base = item.lastKm ?? vehicle.odo;
+    const nextKm = base + item.intervalKm;
+    const ratio = item.intervalKm>0 ? (vehicle.odo-base)/item.intervalKm : 0;
+    kmInfo = {ratio, nextKm};
+  }
+  if(item.intervalMonths){
+    const base = item.lastDate ?? vehicle.createdAt;
+    const nextDate = addMonths(base, item.intervalMonths);
+    const total = new Date(nextDate) - new Date(base);
+    const elapsed = Date.now() - new Date(base+'T00:00:00');
+    const ratio = total>0 ? elapsed/total : 0;
+    dateInfo = {ratio, nextDate};
+  }
+  const ratios = [kmInfo, dateInfo].filter(Boolean).map(x=>x.ratio);
+  const maxRatio = ratios.length ? Math.max(...ratios) : 0;
+  const state = maxRatio>=1 ? 'overdue' : maxRatio>=0.85 ? 'soon' : 'ok';
+  return {state, ratio:maxRatio, kmInfo, dateInfo};
+}
+
+function statusLabel(st){
+  if(st.state==='unset') return '尚未紀錄';
+  if(st.state==='overdue') return '已逾期';
+  if(st.state==='soon') return '即將到期';
+  return '狀況良好';
+}
+
+function nextDueText(item, st){
+  if(st.state==='unset') return '請先紀錄上次保養日期／里程';
+  const parts=[];
+  if(st.kmInfo) parts.push(fmtKm(st.kmInfo.nextKm)+' km');
+  if(st.dateInfo) parts.push(fmtDate(st.dateInfo.nextDate)+' 前');
+  if(parts.length===2) return '下次：'+parts.join(' 或 ')+'（以先到者為準）';
+  return '下次：'+parts.join('');
+}
+
+/* ===================== Render ===================== */
+function render(){
+  const app = document.getElementById('app');
+  const v = getVehicle(currentVehicleId);
+  const overdueCount = v.items.filter(it=>itemStatus(it,v).state==='overdue').length;
+
+  app.innerHTML = `
+    <header class="topbar">
+      <div class="brand"><h1>保養誌</h1><span class="tag">Garage Log</span></div>
+      <button class="icon-btn" onclick="openSettingsModal()">⚙️</button>
+    </header>
+    <div class="veh-tabs" id="vehTabs"></div>
+    <main>
+      <div class="odo-block">
+        <div class="odo-left">
+          <div class="odo-label">目前里程</div>
+          ${renderOdoDigits(v.odo)}
+          <div class="odo-date">最後更新 ${fmtDate(v.odoDate)}</div>
+        </div>
+        <button class="odo-update-btn" onclick="openOdoModal()">更新里程</button>
+      </div>
+
+      <div class="sec-head">
+        <h2>🔧 保養提醒 ${overdueCount>0?`<span class="count-badge">${overdueCount} 項逾期</span>`:''}</h2>
+        <button class="add-link" onclick="openLogModal()">＋ 紀錄保養</button>
+      </div>
+      <div id="engineItems"></div>
+      <div class="cat-divider">法定／行政項目</div>
+      <div id="adminItems"></div>
+
+      <div class="sec-head"><h2>⛽ 油耗紀錄</h2><button class="add-link" onclick="openFuelModal()">＋ 加油紀錄</button></div>
+      <div class="fuel-card" id="fuelCard"></div>
+    </main>
+    <div class="corner-tab" onclick="openChecklistModal()">📋 檢查表</div>
+  `;
+
+  renderVehTabs();
+  renderItems(v);
+  renderFuel(v);
+}
+
+function renderOdoDigits(odo){
+  const s = String(Math.max(0,Math.round(odo))).padStart(6,'0').split('');
+  return `<div class="odo-digits">${s.map(d=>`<div class="odo-digit">${d}</div>`).join('')}<span class="odo-unit">km</span></div>`;
+}
+
+function renderVehTabs(){
+  const wrap = document.getElementById('vehTabs');
+  wrap.innerHTML = DATA.vehicles.map(v=>`
+    <div class="veh-tab c-${v.color} ${v.id===currentVehicleId?'active':''}" onclick="switchVehicle('${v.id}')">
+      <div>${v.name}</div>
+      <div class="m">${v.model||'（尚未設定型號）'}</div>
+    </div>
+  `).join('');
+}
+
+function switchVehicle(id){ currentVehicleId=id; render(); }
+
+function renderItems(v){
+  const eng = v.items.filter(i=>i.category==='engine');
+  const adm = v.items.filter(i=>i.category==='admin');
+  document.getElementById('engineItems').innerHTML = eng.map(it=>itemCardHtml(it,v)).join('') || `<div class="empty-note">尚無保養項目</div>`;
+  document.getElementById('adminItems').innerHTML = adm.map(it=>itemCardHtml(it,v)).join('');
+}
+
+function itemCardHtml(item, v){
+  const st = itemStatus(item, v);
+  const pct = st.state==='unset' ? 0 : Math.min(100, Math.max(4, Math.round((st.ratio||0)*100)));
+  const stubClass = 'stub-'+st.state, pillClass='pill-'+st.state, barColor = st.state==='overdue'?'var(--red)':st.state==='soon'?'var(--amber)':'var(--green)';
+  return `
+    <div class="item-card">
+      <div class="item-stub ${stubClass}"></div>
+      <div class="item-body" onclick="openEditItemModal('${item.id}')">
+        <div class="item-top">
+          <div class="item-name">${item.name}</div>
+          <div class="status-pill ${pillClass}">${statusLabel(st)}</div>
+        </div>
+        <div class="item-sub">${nextDueText(item, st)}</div>
+        ${item.note?`<div class="hint">${item.note}</div>`:''}
+        ${st.state!=='unset'?`<div class="item-bar"><div class="item-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`:''}
+      </div>
+    </div>
+  `;
+}
+
+function renderFuel(v){
+  const logs = [...v.fuelLogs].sort((a,b)=>b.km-a.km);
+  const withRating = v.fuelLogs.filter(l=>l.kmPerL);
+  const recent = withRating.slice(-5);
+  const avg = recent.length ? recent.reduce((s,l)=>s+l.kmPerL,0)/recent.length : null;
+  let avgRating = null;
+  if(avg!=null){
+    avgRating = avg>=v.fuelBenchmark.good ? {label:'良好', cls:'pill-ok'} : avg>=v.fuelBenchmark.bad ? {label:'普通', cls:'pill-soon'} : {label:'待改善', cls:'pill-overdue'};
+  }
+  const rows = logs.slice(0,6).map(l=>`
+    <div class="fuel-log-row">
+      <div class="fuel-log-date">${fmtDate(l.date)}<br>${fmtKm(l.km)} km</div>
+      <div class="fuel-log-mid">
+        <div class="fuel-log-kml">${l.kmPerL?l.kmPerL.toFixed(1)+' km/L':'—'}</div>
+        <div style="font-size:10px;color:var(--ink-soft);">${l.liters}L${l.cost?' · $'+l.cost:''}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('fuelCard').innerHTML = `
+    <div class="fuel-summary">
+      <div>
+        <div class="fuel-avg-num">${avg!=null?avg.toFixed(1):'—'}</div>
+        <div class="fuel-avg-label">近 ${recent.length} 次平均 km/L</div>
+      </div>
+      ${avgRating?`<div class="rating-badge ${avgRating.cls==='pill-ok'?'':''}" style="background:${avgRating.cls==='pill-ok'?'var(--green-dim)':avgRating.cls==='pill-soon'?'var(--amber-dim)':'var(--red-dim)'};color:${avgRating.cls==='pill-ok'?'var(--green)':avgRating.cls==='pill-soon'?'var(--amber)':'var(--red)'}">${avgRating.label}</div>`:''}
+    </div>
+    ${rows || `<div class="empty-note">尚無加油紀錄，記錄兩次以上即可看到油耗</div>`}
+  `;
+}
+
+/* ===================== Modal 系統 ===================== */
+function modalRoot(){
+  let m = document.getElementById('modalRoot');
+  if(!m){ m = document.createElement('div'); m.id='modalRoot'; document.body.appendChild(m); }
+  return m;
+}
+function openModal(html){
+  modalRoot().innerHTML = `<div class="modal-overlay" id="ov" onclick="if(event.target.id==='ov')closeModal()"><div class="modal-sheet">${html}</div></div>`;
+}
+function closeModal(){ modalRoot().innerHTML=''; }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* --- 更新里程 --- */
+function openOdoModal(){
+  const v = getVehicle(currentVehicleId);
+  openModal(`
+    <div class="modal-title">更新目前里程<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">${v.name}</div>
+    <label class="f-label">日期</label>
+    <input type="date" id="odoDate" value="${todayStr()}">
+    <label class="f-label">目前里程（km）</label>
+    <input type="number" id="odoKm" value="${v.odo}" inputmode="numeric">
+    <button class="btn-primary" onclick="submitOdo()">儲存</button>
+  `);
+}
+async function submitOdo(){
+  const v = getVehicle(currentVehicleId);
+  const km = parseFloat(document.getElementById('odoKm').value);
+  const date = document.getElementById('odoDate').value || todayStr();
+  if(isNaN(km) || km<0){ showToast('請輸入正確里程'); return; }
+  v.odo = km; v.odoDate = date;
+  await saveData(); closeModal(); render(); showToast('里程已更新');
+}
+
+/* --- 紀錄保養 --- */
+function openLogModal(){
+  const v = getVehicle(currentVehicleId);
+  const items = v.items.map(it=>`
+    <div class="check-row">
+      <input type="checkbox" id="chk_${it.id}">
+      <label for="chk_${it.id}">${it.name}</label>
+    </div>
+  `).join('');
+  openModal(`
+    <div class="modal-title">紀錄保養<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">${v.name} · 勾選這次做了哪些項目</div>
+    <label class="f-label">保養日期</label>
+    <input type="date" id="logDate" value="${todayStr()}">
+    <label class="f-label">當時里程（km）</label>
+    <input type="number" id="logKm" value="${v.odo}" inputmode="numeric">
+    <label class="f-label">保養項目</label>
+    ${items}
+    <button class="btn-primary" onclick="submitLog()">儲存並自動計算下次時間</button>
+  `);
+}
+async function submitLog(){
+  const v = getVehicle(currentVehicleId);
+  const date = document.getElementById('logDate').value || todayStr();
+  const km = parseFloat(document.getElementById('logKm').value);
+  if(isNaN(km) || km<0){ showToast('請輸入正確里程'); return; }
+  const chosen = v.items.filter(it=>document.getElementById('chk_'+it.id).checked);
+  if(chosen.length===0){ showToast('請至少勾選一個項目'); return; }
+  chosen.forEach(it=>{ it.lastKm = km; it.lastDate = date; });
+  v.logs.push({id:uid(), date, km, itemNames:chosen.map(i=>i.name)});
+  if(km > v.odo){ v.odo = km; v.odoDate = date; }
+  await saveData(); closeModal(); render(); showToast('已紀錄，下次時間自動算好了');
+}
+
+/* --- 編輯單一項目 --- */
+function openEditItemModal(itemId){
+  const v = getVehicle(currentVehicleId);
+  const it = v.items.find(i=>i.id===itemId);
+  openModal(`
+    <div class="modal-title">${it.name}<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">編輯間隔設定與上次保養紀錄</div>
+    <label class="f-label">項目名稱</label>
+    <input type="text" id="eName" value="${it.name}">
+    <div class="row2">
+      <div><label class="f-label">每幾公里（可留空）</label><input type="number" id="eKmInt" value="${it.intervalKm ?? ''}"></div>
+      <div><label class="f-label">每幾個月（可留空）</label><input type="number" id="eMoInt" value="${it.intervalMonths ?? ''}"></div>
+    </div>
+    <div class="row2">
+      <div><label class="f-label">上次里程</label><input type="number" id="eLastKm" value="${it.lastKm ?? ''}"></div>
+      <div><label class="f-label">上次日期</label><input type="date" id="eLastDate" value="${it.lastDate ?? ''}"></div>
+    </div>
+    <label class="f-label">備註（可留空）</label>
+    <input type="text" id="eNote" value="${it.note ?? ''}">
+    <button class="btn-primary" onclick="submitEditItem('${it.id}')">儲存</button>
+    <div class="btn-ghost-row">
+      <button class="btn-secondary btn-danger" onclick="deleteItem('${it.id}')">刪除項目</button>
+      <button class="btn-secondary" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+async function submitEditItem(itemId){
+  const v = getVehicle(currentVehicleId);
+  const it = v.items.find(i=>i.id===itemId);
+  it.name = document.getElementById('eName').value.trim() || it.name;
+  const kmInt = document.getElementById('eKmInt').value;
+  const moInt = document.getElementById('eMoInt').value;
+  it.intervalKm = kmInt===''? null : parseFloat(kmInt);
+  it.intervalMonths = moInt===''? null : parseFloat(moInt);
+  const lastKm = document.getElementById('eLastKm').value;
+  const lastDate = document.getElementById('eLastDate').value;
+  it.lastKm = lastKm===''? null : parseFloat(lastKm);
+  it.lastDate = lastDate || null;
+  it.note = document.getElementById('eNote').value.trim() || null;
+  await saveData(); closeModal(); render(); showToast('已更新');
+}
+async function deleteItem(itemId){
+  const v = getVehicle(currentVehicleId);
+  v.items = v.items.filter(i=>i.id!==itemId);
+  await saveData(); closeModal(); render(); showToast('已刪除項目');
+}
+function openAddItemModal(){
+  openModal(`
+    <div class="modal-title">新增保養項目<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <label class="f-label">項目名稱</label>
+    <input type="text" id="nName" placeholder="例如：定期洗油路">
+    <label class="f-label">分類</label>
+    <div class="tabbar">
+      <button class="active" id="catEngine" onclick="pickCat('engine')">車輛保養</button>
+      <button id="catAdmin" onclick="pickCat('admin')">法定／行政</button>
+    </div>
+    <div class="row2">
+      <div><label class="f-label">每幾公里（可留空）</label><input type="number" id="nKmInt"></div>
+      <div><label class="f-label">每幾個月（可留空）</label><input type="number" id="nMoInt"></div>
+    </div>
+    <button class="btn-primary" onclick="submitAddItem()">新增</button>
+  `);
+  window._newCat='engine';
+}
+function pickCat(cat){
+  window._newCat = cat;
+  document.getElementById('catEngine').classList.toggle('active', cat==='engine');
+  document.getElementById('catAdmin').classList.toggle('active', cat==='admin');
+}
+async function submitAddItem(){
+  const v = getVehicle(currentVehicleId);
+  const name = document.getElementById('nName').value.trim();
+  if(!name){ showToast('請輸入項目名稱'); return; }
+  const kmInt = document.getElementById('nKmInt').value;
+  const moInt = document.getElementById('nMoInt').value;
+  v.items.push({id:uid(), name, category:window._newCat||'engine',
+    intervalKm: kmInt===''?null:parseFloat(kmInt),
+    intervalMonths: moInt===''?null:parseFloat(moInt),
+    lastKm:null, lastDate:null});
+  await saveData(); closeModal(); openSettingsModal(); showToast('已新增項目');
+}
+
+/* --- 加油紀錄 --- */
+function openFuelModal(){
+  const v = getVehicle(currentVehicleId);
+  openModal(`
+    <div class="modal-title">加油紀錄<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-sub">${v.name}</div>
+    <label class="f-label">日期</label>
+    <input type="date" id="fDate" value="${todayStr()}">
+    <label class="f-label">目前里程（km）</label>
+    <input type="number" id="fKm" value="${v.odo}">
+    <div class="row2">
+      <div><label class="f-label">加油公升數</label><input type="number" id="fLiters" step="0.01"></div>
+      <div><label class="f-label">花費（選填）</label><input type="number" id="fCost"></div>
+    </div>
+    <button class="btn-primary" onclick="submitFuel()">儲存</button>
+  `);
+}
+async function submitFuel(){
+  const v = getVehicle(currentVehicleId);
+  const date = document.getElementById('fDate').value || todayStr();
+  const km = parseFloat(document.getElementById('fKm').value);
+  const liters = parseFloat(document.getElementById('fLiters').value);
+  const costRaw = document.getElementById('fCost').value;
+  const cost = costRaw===''? null : parseFloat(costRaw);
+  if(isNaN(km) || isNaN(liters) || liters<=0){ showToast('請輸入正確里程與公升數'); return; }
+  const prior = v.fuelLogs.filter(l=>l.km < km).sort((a,b)=>b.km-a.km)[0];
+  let kmPerL=null, rating=null;
+  if(prior){
+    const dist = km - prior.km;
+    if(dist>0){
+      kmPerL = dist/liters;
+      rating = kmPerL>=v.fuelBenchmark.good?'good':kmPerL>=v.fuelBenchmark.bad?'ok':'bad';
+    }
+  }
+  v.fuelLogs.push({id:uid(), date, km, liters, cost, kmPerL, rating});
+  if(km > v.odo){ v.odo=km; v.odoDate=date; }
+  await saveData(); closeModal(); render();
+  showToast(kmPerL? `油耗 ${kmPerL.toFixed(1)} km/L` : '已記錄，下次加油即可算出油耗');
+}
+
+/* --- 檢查表 --- */
+let checklistTab = 'daily';
+function openChecklistModal(){
+  checklistTab='daily';
+  renderChecklistModal();
+}
+function renderChecklistModal(){
+  const cl = DATA.checklists[checklistTab];
+  openModal(`
+    <div class="modal-title">📋 檢查表<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="tabbar">
+      <button class="${checklistTab==='daily'?'active':''}" onclick="switchChecklistTab('daily')">日常檢查</button>
+      <button class="${checklistTab==='trip'?'active':''}" onclick="switchChecklistTab('trip')">遠門檢查</button>
+    </div>
+    <div class="modal-sub">上次完成：${cl.lastDone?fmtDate(cl.lastDone):'尚未執行過'}</div>
+    <div id="clItems">${cl.items.map((t,idx)=>`
+      <div class="check-row">
+        <input type="checkbox" id="cli_${idx}">
+        <label for="cli_${idx}">${t}</label>
+      </div>
+    `).join('')}</div>
+    <button class="btn-primary" onclick="finishChecklist()">標記為已完成</button>
+    <div class="btn-ghost-row">
+      <button class="btn-secondary" onclick="openEditChecklistModal()">＋ 編輯項目</button>
+      <button class="btn-secondary" onclick="closeModal()">關閉</button>
+    </div>
+  `);
+}
+function switchChecklistTab(tab){ checklistTab=tab; renderChecklistModal(); }
+async function finishChecklist(){
+  DATA.checklists[checklistTab].lastDone = todayStr();
+  await saveData(); closeModal(); showToast('已標記完成');
+}
+function openEditChecklistModal(){
+  const cl = DATA.checklists[checklistTab];
+  openModal(`
+    <div class="modal-title">編輯：${cl.title}<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div id="editList">${cl.items.map((t,idx)=>`
+      <div class="check-row">
+        <input type="text" style="flex:1;border:none;background:transparent;font-size:13.5px;" value="${t}" id="editItem_${idx}">
+        <button class="edit-pencil" onclick="removeChecklistItem(${idx})">🗑</button>
+      </div>
+    `).join('')}</div>
+    <label class="f-label">新增項目</label>
+    <input type="text" id="newClItem" placeholder="輸入新的檢查項目">
+    <button class="btn-secondary" onclick="addChecklistItem()">＋ 新增</button>
+    <button class="btn-primary" onclick="saveChecklistEdits()">儲存變更</button>
+  `);
+}
+function addChecklistItem(){
+  const val = document.getElementById('newClItem').value.trim();
+  if(!val) return;
+  DATA.checklists[checklistTab].items.push(val);
+  openEditChecklistModal();
+}
+function removeChecklistItem(idx){
+  DATA.checklists[checklistTab].items.splice(idx,1);
+  openEditChecklistModal();
+}
+async function saveChecklistEdits(){
+  const cl = DATA.checklists[checklistTab];
+  cl.items = cl.items.map((t,idx)=>{
+    const el = document.getElementById('editItem_'+idx);
+    return el ? el.value.trim() : t;
+  }).filter(Boolean);
+  await saveData(); renderChecklistModal(); showToast('檢查表已更新');
+}
+
+/* --- 設定 --- */
+function openSettingsModal(){
+  const v = getVehicle(currentVehicleId);
+  openModal(`
+    <div class="modal-title">車輛設定<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="tabbar">${DATA.vehicles.map(ve=>`<button class="${ve.id===currentVehicleId?'active':''}" onclick="settingsSwitchVeh('${ve.id}')">${ve.name}</button>`).join('')}</div>
+    <label class="f-label">車輛暱稱</label>
+    <input type="text" id="sName" value="${v.name}">
+    <label class="f-label">車型／年份</label>
+    <input type="text" id="sModel" value="${v.model}">
+    <div class="row2">
+      <div><label class="f-label">油耗良好門檻（km/L）</label><input type="number" id="sGood" value="${v.fuelBenchmark.good}"></div>
+      <div><label class="f-label">油耗待改善門檻（km/L）</label><input type="number" id="sBad" value="${v.fuelBenchmark.bad}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveVehicleSettings()">儲存基本資料</button>
+
+    <div class="sec-head" style="margin-top:20px;"><h2 style="font-size:13px;">保養項目管理</h2><button class="add-link" onclick="openAddItemModal()">＋ 新增項目</button></div>
+    ${v.items.map(it=>`
+      <div class="settings-item-row">
+        <div>
+          <div class="settings-item-name">${it.name}</div>
+          <div class="settings-item-sub">${it.intervalKm?fmtKm(it.intervalKm)+'km':''}${it.intervalKm&&it.intervalMonths?' / ':''}${it.intervalMonths?it.intervalMonths+'個月':''}</div>
+        </div>
+        <button class="edit-pencil" onclick="openEditItemModal('${it.id}')">✎</button>
+      </div>
+    `).join('')}
+  `);
+}
+function settingsSwitchVeh(id){ currentVehicleId=id; openSettingsModal(); }
+async function saveVehicleSettings(){
+  const v = getVehicle(currentVehicleId);
+  v.name = document.getElementById('sName').value.trim() || v.name;
+  v.model = document.getElementById('sModel').value.trim();
+  const good = parseFloat(document.getElementById('sGood').value);
+  const bad = parseFloat(document.getElementById('sBad').value);
+  if(!isNaN(good)) v.fuelBenchmark.good = good;
+  if(!isNaN(bad)) v.fuelBenchmark.bad = bad;
+  await saveData(); closeModal(); render(); showToast('已儲存');
+}
+
+/* ===================== 啟動 ===================== */
+function renderSetupNeeded(){
+  document.getElementById('app').innerHTML = `
+    <div class="loading-note" style="text-align:left;padding:40px 20px;">
+      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-bottom:8px;">⚙️ 還沒設定 Firebase</div>
+      <p>請打開這個 HTML 檔案，把最上面 <code>FIREBASE_CONFIG</code> 裡的六個值換成你自己 Firebase 專案的設定，存檔後重新整理頁面即可。</p>
+    </div>`;
+}
+function renderFirebaseError(e){
+  document.getElementById('app').innerHTML = `
+    <div class="loading-note" style="text-align:left;padding:40px 20px;">
+      <div style="font-size:16px;font-weight:900;color:var(--red);margin-bottom:8px;">連線失敗</div>
+      <p>無法連上 Firebase，請確認：</p>
+      <p>1. FIREBASE_CONFIG 六個值是否填對<br>2. Firestore 資料庫是否已建立<br>3. Authentication 是否已開啟「匿名」登入方式<br>4. Firestore 安全規則是否允許 request.auth != null 讀寫</p>
+      <p style="color:var(--ink-soft);font-size:11px;margin-top:10px;">錯誤訊息：${(e&&e.message)||e}</p>
+    </div>`;
+}
+(async function init(){
+  if(!isConfigured){ renderSetupNeeded(); return; }
+  try{
+    await initFirebase();
+    await loadData();
+    render();
+  }catch(e){
+    renderFirebaseError(e);
+  }
+})();
+</script>
+</body>
+</html>
