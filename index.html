@@ -255,30 +255,31 @@ function fmtKm(n){ return Math.round(n).toLocaleString('en-US'); }
 function defaultData(){
   const today = todayStr();
   const carItems = [
-    {name:'機油＋機油濾芯', category:'engine', intervalKm:5000, intervalMonths:6},
-    {name:'空氣濾芯', category:'engine', intervalKm:10000, intervalMonths:12},
+    {name:'機油＋機油濾芯', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠一般建議週期，台灣多為短程、悶熱、塞車環境，建議不要拉太長'},
+    {name:'空氣濾芯', category:'engine', intervalKm:10000, intervalMonths:12, note:'台灣多塵環境可視情況縮短至約8000公里檢查／更換'},
     {name:'冷氣濾網', category:'engine', intervalKm:10000, intervalMonths:12},
-    {name:'火星塞', category:'engine', intervalKm:20000, intervalMonths:24},
-    {name:'煞車油', category:'engine', intervalKm:null, intervalMonths:24},
+    {name:'火星塞', category:'engine', intervalKm:20000, intervalMonths:24, note:'Kappa 1.25L原廠多配傳統型火星塞，若已換裝銥合金型可延長至約40000公里，請對照車主手冊確認'},
+    {name:'煞車油', category:'engine', intervalKm:null, intervalMonths:24, note:'DOT3/4煞車油會吸濕劣化，建議每2年更換'},
     {name:'冷卻液（水箱水）', category:'engine', intervalKm:40000, intervalMonths:24},
     {name:'雨刷', category:'engine', intervalKm:null, intervalMonths:12},
-    {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:24},
-    {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48},
-    {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:6, note:'車齡逾10年，每年須驗車2次（每6個月）'},
+    {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18, note:'車齡已約7～8年，建議每年半檢測一次電瓶健康度'},
+    {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48, note:'胎紋雖足，橡膠超過5年也建議評估更換'},
+    {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡未滿10年，每年驗車1次即可；滿10年後需改為每半年1次'},
     {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'每年4月繳納'},
     {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'每年7月繳納'},
     {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
   ];
   function scooterItems(){
     return [
-      {name:'機油', category:'engine', intervalKm:1500, intervalMonths:3},
-      {name:'齒輪油', category:'engine', intervalKm:5000, intervalMonths:6},
-      {name:'空濾', category:'engine', intervalKm:4000, intervalMonths:6},
-      {name:'火星塞', category:'engine', intervalKm:8000, intervalMonths:12},
-      {name:'煞車來令片', category:'engine', intervalKm:6000, intervalMonths:12},
-      {name:'傳動皮帶', category:'engine', intervalKm:15000, intervalMonths:24},
-      {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12},
-      {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18},
+      {name:'機油', category:'engine', intervalKm:1000, intervalMonths:3, note:'原廠建議每1000公里更換一次（新車第一次300公里提前更換）'},
+      {name:'齒輪油', category:'engine', intervalKm:3000, intervalMonths:6, note:'原廠建議每3000公里或6個月更換，以先到者為準'},
+      {name:'空氣濾清器', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠建議每1000公里檢查清潔，每5000公里更換濾芯'},
+      {name:'火星塞', category:'engine', intervalKm:8000, intervalMonths:12, note:'指定型號 NGK LR7D，間隙0.6–0.7mm'},
+      {name:'煞車來令片', category:'engine', intervalKm:6000, intervalMonths:12, note:'原廠僅列每1000公里檢查週期，實際更換依磨損程度而定'},
+      {name:'煞車油', category:'engine', intervalKm:10000, intervalMonths:12, note:'採用DOT-4煞車油，原廠建議每10000公里或1年更換'},
+      {name:'傳動系統（CVT濾綿／滾輪／皮帶）', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠建議每5000公里檢查、清潔或更換CVT濾綿；皮帶本身一般約15000公里視磨損更換'},
+      {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12, note:'胎壓參考值：單人前1.75／後2.0 kgf/cm²，雙人前後皆2.25 kgf/cm²'},
+      {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:12, note:'密閉式免保養電瓶，建議每年檢測電壓是否≥12V'},
       {name:'排氣定期檢驗', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡滿5年才需每年檢驗一次'},
       {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'所有機車每年7月都要繳，不分排氣量'},
       {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
@@ -290,11 +291,11 @@ function defaultData(){
   }
   return {
     vehicles:[
-      {id:'v1', name:'小藍', model:'Kia Morning 2008', type:'car', color:'car', odo:0, odoDate:today, createdAt:today,
+      {id:'v1', name:'小藍', model:'2018 Kia Picanto X-Line', type:'car', color:'car', odo:0, odoDate:today, createdAt:today,
         items:mkItems(carItems), logs:[], fuelLogs:[], fuelBenchmark:{good:13, bad:10}},
       {id:'v2', name:'機車8316', model:'2023 光陽 SZ25AA', type:'scooter', color:'8316', odo:0, odoDate:today, createdAt:today,
         items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:38, bad:28}},
-      {id:'v3', name:'機車739', model:'', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
+      {id:'v3', name:'機車739', model:'光陽 V2', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
         items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
     ],
     checklists:{
@@ -318,12 +319,18 @@ function initFirebase(){
 
 let suppressNextSnapshot = false;
 async function loadData(){
+  const forceReset = new URLSearchParams(location.search).get('reset') === '1';
   const snap = await docRef.get();
-  if(snap.exists){
-    DATA = snap.data();
-  } else {
+  if(forceReset || !snap.exists){
     DATA = defaultData();
     await docRef.set(DATA);
+    if(forceReset){
+      // 清掉網址上的 ?reset=1，避免下次重新整理又被重置一次
+      history.replaceState(null, '', location.pathname);
+      showToast('資料庫已重建為最新預設保養項目');
+    }
+  } else {
+    DATA = snap.data();
   }
   currentVehicleId = DATA.vehicles[0].id;
 
