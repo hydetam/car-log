@@ -245,6 +245,13 @@ function addMonths(dateStr, n){
   d.setMonth(d.getMonth()+n);
   return d.toISOString().slice(0,10);
 }
+function nextFixedAnnualDate(month, day){
+  const now = new Date();
+  let year = now.getFullYear();
+  let d = new Date(year, month-1, day);
+  if(d < now) d = new Date(year+1, month-1, day);
+  return d.toISOString().slice(0,10);
+}
 function fmtDate(dateStr){
   if(!dateStr) return '—';
   const d = new Date(dateStr+'T00:00:00');
@@ -265,8 +272,8 @@ function defaultData(){
     {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18, note:'⚠️經驗值估計，非原廠手冊確認：車齡已約7～8年，建議每年半檢測一次電瓶健康度'},
     {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48, note:'⚠️經驗值估計，非原廠手冊確認：胎紋雖足，橡膠超過5年也建議評估更換'},
     {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:12, note:'依交通法規（非估計）：出廠未滿5年免驗，5～10年每年驗1次（此車現況），滿10年後改為每年驗2次'},
-    {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'依稅法規定（非估計）：每年4月繳納'},
-    {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'依稅法規定（非估計）：每年7月繳納'},
+    {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:4, fixedDay:30, note:'依稅法規定（非估計）：固定每年4月1日～4月30日繳納期限，跟里程無關'},
+    {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:7, fixedDay:31, note:'依稅法規定（非估計）：固定每年7月開徵，繳費期限7月31日，跟里程無關'},
     {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
   ];
   function scooterItems(){
@@ -281,7 +288,7 @@ function defaultData(){
       {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12, note:'胎壓參考值：單人前1.75／後2.0 kgf/cm²，雙人前後皆2.25 kgf/cm²'},
       {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:12, note:'密閉式免保養電瓶，建議每年檢測電壓是否≥12V'},
       {name:'排氣定期檢驗', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡滿5年才需每年檢驗一次'},
-      {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'125c.c.仍要繳，每年7月開徵（現稱公路養管費），約450元'},
+      {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:7, fixedDay:31, note:'125c.c.仍要繳，固定每年7月開徵（現稱公路養管費），繳費期限7月31日，跟里程無關，約450元'},
       {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
     ];
   }
@@ -357,7 +364,7 @@ function getVehicle(id){ return DATA.vehicles.find(v=>v.id===id); }
 
 /* ===================== 狀態計算 ===================== */
 function itemStatus(item, vehicle){
-  if(item.lastKm==null && !item.lastDate){
+  if(!item.fixedMonth && item.lastKm==null && !item.lastDate){
     return {state:'unset'};
   }
   let kmInfo=null, dateInfo=null;
@@ -367,7 +374,14 @@ function itemStatus(item, vehicle){
     const ratio = item.intervalKm>0 ? (vehicle.odo-base)/item.intervalKm : 0;
     kmInfo = {ratio, nextKm};
   }
-  if(item.intervalMonths){
+  if(item.fixedMonth){
+    const nextDate = nextFixedAnnualDate(item.fixedMonth, item.fixedDay||1);
+    const startDate = addMonths(nextDate, -12);
+    const total = new Date(nextDate) - new Date(startDate);
+    const elapsed = Date.now() - new Date(startDate+'T00:00:00');
+    const ratio = total>0 ? elapsed/total : 0;
+    dateInfo = {ratio, nextDate};
+  } else if(item.intervalMonths){
     const base = item.lastDate ?? vehicle.createdAt;
     const nextDate = addMonths(base, item.intervalMonths);
     const total = new Date(nextDate) - new Date(base);
