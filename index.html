@@ -662,8 +662,14 @@ async function submitAddItem(){
 }
 
 /* --- 加油紀錄 --- */
+let fuelMode = 'liters';
 function openFuelModal(){
+  fuelMode = 'liters';
+  renderFuelModal();
+}
+function renderFuelModal(){
   const v = getVehicle(currentVehicleId);
+  const lastPrice = v.lastFuelPrice ?? '';
   openModal(`
     <div class="modal-title">加油紀錄<button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-sub">${v.name}</div>
@@ -671,20 +677,56 @@ function openFuelModal(){
     <input type="date" id="fDate" value="${todayStr()}">
     <label class="f-label">目前里程（km）</label>
     <input type="number" id="fKm" value="${v.odo}">
-    <div class="row2">
-      <div><label class="f-label">加油公升數</label><input type="number" id="fLiters" step="0.01"></div>
-      <div><label class="f-label">花費（選填）</label><input type="number" id="fCost"></div>
+
+    <div class="tabbar" style="margin-top:12px;">
+      <button class="${fuelMode==='liters'?'active':''}" onclick="switchFuelMode('liters')">輸入公升數</button>
+      <button class="${fuelMode==='amount'?'active':''}" onclick="switchFuelMode('amount')">用金額＋油價算</button>
     </div>
+
+    ${fuelMode==='liters' ? `
+      <div class="row2">
+        <div><label class="f-label">加油公升數</label><input type="number" id="fLiters" step="0.01"></div>
+        <div><label class="f-label">花費（選填）</label><input type="number" id="fCost"></div>
+      </div>
+    ` : `
+      <div class="row2">
+        <div><label class="f-label">總金額</label><input type="number" id="fAmount" oninput="updateAmountPreview()"></div>
+        <div><label class="f-label">油價（元／公升）</label><input type="number" id="fPrice" step="0.1" value="${lastPrice}" oninput="updateAmountPreview()"></div>
+      </div>
+      <div class="hint" id="amountPreview">輸入金額和油價，會自動算出公升數</div>
+    `}
+
     <button class="btn-primary" onclick="submitFuel()">儲存</button>
   `);
+}
+function switchFuelMode(mode){ fuelMode = mode; renderFuelModal(); }
+function updateAmountPreview(){
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const el = document.getElementById('amountPreview');
+  if(!isNaN(amount) && !isNaN(price) && price>0){
+    el.textContent = `＝ ${(amount/price).toFixed(2)} 公升`;
+  } else {
+    el.textContent = '輸入金額和油價，會自動算出公升數';
+  }
 }
 async function submitFuel(){
   const v = getVehicle(currentVehicleId);
   const date = document.getElementById('fDate').value || todayStr();
   const km = parseFloat(document.getElementById('fKm').value);
-  const liters = parseFloat(document.getElementById('fLiters').value);
-  const costRaw = document.getElementById('fCost').value;
-  const cost = costRaw===''? null : parseFloat(costRaw);
+  let liters, cost;
+  if(fuelMode==='liters'){
+    liters = parseFloat(document.getElementById('fLiters').value);
+    const costRaw = document.getElementById('fCost').value;
+    cost = costRaw===''? null : parseFloat(costRaw);
+  } else {
+    const amount = parseFloat(document.getElementById('fAmount').value);
+    const price = parseFloat(document.getElementById('fPrice').value);
+    if(isNaN(amount) || isNaN(price) || price<=0){ showToast('請輸入正確金額與油價'); return; }
+    liters = amount/price;
+    cost = amount;
+    v.lastFuelPrice = price;
+  }
   if(isNaN(km) || isNaN(liters) || liters<=0){ showToast('請輸入正確里程與公升數'); return; }
   const prior = v.fuelLogs.filter(l=>l.km < km).sort((a,b)=>b.km-a.km)[0];
   let kmPerL=null, rating=null;
@@ -695,7 +737,7 @@ async function submitFuel(){
       rating = kmPerL>=v.fuelBenchmark.good?'good':kmPerL>=v.fuelBenchmark.bad?'ok':'bad';
     }
   }
-  v.fuelLogs.push({id:uid(), date, km, liters, cost, kmPerL, rating});
+  v.fuelLogs.push({id:uid(), date, km, liters:Math.round(liters*100)/100, cost, kmPerL, rating});
   if(km > v.odo){ v.odo=km; v.odoDate=date; }
   await saveData(); closeModal(); render();
   showToast(kmPerL? `油耗 ${kmPerL.toFixed(1)} km/L` : '已記錄，下次加油即可算出油耗');
