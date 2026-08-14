@@ -255,18 +255,18 @@ function fmtKm(n){ return Math.round(n).toLocaleString('en-US'); }
 function defaultData(){
   const today = todayStr();
   const carItems = [
-    {name:'機油＋機油濾芯', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠一般建議週期，台灣多為短程、悶熱、塞車環境，建議不要拉太長'},
-    {name:'空氣濾芯', category:'engine', intervalKm:10000, intervalMonths:12, note:'台灣多塵環境可視情況縮短至約8000公里檢查／更換'},
-    {name:'冷氣濾網', category:'engine', intervalKm:10000, intervalMonths:12},
-    {name:'火星塞', category:'engine', intervalKm:20000, intervalMonths:24, note:'Kappa 1.25L原廠多配傳統型火星塞，若已換裝銥合金型可延長至約40000公里，請對照車主手冊確認'},
-    {name:'煞車油', category:'engine', intervalKm:null, intervalMonths:24, note:'DOT3/4煞車油會吸濕劣化，建議每2年更換'},
-    {name:'冷卻液（水箱水）', category:'engine', intervalKm:40000, intervalMonths:24},
-    {name:'雨刷', category:'engine', intervalKm:null, intervalMonths:12},
-    {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18, note:'車齡已約7～8年，建議每年半檢測一次電瓶健康度'},
-    {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48, note:'胎紋雖足，橡膠超過5年也建議評估更換'},
-    {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡未滿10年，每年驗車1次即可；滿10年後需改為每半年1次'},
-    {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'每年4月繳納'},
-    {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'每年7月繳納'},
+    {name:'機油＋機油濾芯', category:'engine', intervalKm:5000, intervalMonths:6, note:'⚠️經驗值估計，非原廠手冊確認：台灣多短程、塞車，抓5000公里較保守安全；部分Kia車系原廠正常條件下可到15000公里，實際請以車主手冊為準'},
+    {name:'空氣濾芯', category:'engine', intervalKm:10000, intervalMonths:12, note:'⚠️經驗值估計，非原廠手冊確認：台灣多塵環境可視情況縮短至約8000公里'},
+    {name:'冷氣濾網', category:'engine', intervalKm:10000, intervalMonths:12, note:'⚠️經驗值估計，非原廠手冊確認'},
+    {name:'火星塞', category:'engine', intervalKm:20000, intervalMonths:24, note:'⚠️經驗值估計，非原廠手冊確認：2018年Kappa 1.25引擎多配傳統型火星塞，若已知是銥合金型可大幅延長，實際請以車主手冊為準'},
+    {name:'煞車油', category:'engine', intervalKm:null, intervalMonths:24, note:'⚠️經驗值估計，非原廠手冊確認：DOT3/4煞車油會吸濕劣化，一般建議每2年更換'},
+    {name:'冷卻液（水箱水）', category:'engine', intervalKm:40000, intervalMonths:24, note:'⚠️經驗值估計，非原廠手冊確認'},
+    {name:'雨刷', category:'engine', intervalKm:null, intervalMonths:12, note:'⚠️經驗值估計，非原廠手冊確認'},
+    {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:18, note:'⚠️經驗值估計，非原廠手冊確認：車齡已約7～8年，建議每年半檢測一次電瓶健康度'},
+    {name:'輪胎檢查／更換', category:'engine', intervalKm:40000, intervalMonths:48, note:'⚠️經驗值估計，非原廠手冊確認：胎紋雖足，橡膠超過5年也建議評估更換'},
+    {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:12, note:'依交通法規（非估計）：出廠未滿5年免驗，5～10年每年驗1次（此車現況），滿10年後改為每年驗2次'},
+    {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'依稅法規定（非估計）：每年4月繳納'},
+    {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'依稅法規定（非估計）：每年7月繳納'},
     {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
   ];
   function scooterItems(){
@@ -281,9 +281,8 @@ function defaultData(){
       {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12, note:'胎壓參考值：單人前1.75／後2.0 kgf/cm²，雙人前後皆2.25 kgf/cm²'},
       {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:12, note:'密閉式免保養電瓶，建議每年檢測電壓是否≥12V'},
       {name:'排氣定期檢驗', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡滿5年才需每年檢驗一次'},
-      {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'所有機車每年7月都要繳，不分排氣量'},
+      {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, note:'125c.c.仍要繳，每年7月開徵（現稱公路養管費），約450元'},
       {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
-      {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, note:'僅排氣量超過150c.c.需繳納'},
     ];
   }
   function mkItems(list){
@@ -295,7 +294,7 @@ function defaultData(){
         items:mkItems(carItems), logs:[], fuelLogs:[], fuelBenchmark:{good:13, bad:10}},
       {id:'v2', name:'機車8316', model:'2023 光陽 SZ25AA', type:'scooter', color:'8316', odo:0, odoDate:today, createdAt:today,
         items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:38, bad:28}},
-      {id:'v3', name:'機車739', model:'光陽 V2', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
+      {id:'v3', name:'機車739', model:'光陽 V2 125', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
         items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
     ],
     checklists:{
