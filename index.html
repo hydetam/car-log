@@ -381,11 +381,18 @@ function itemStatus(item, vehicle){
   return {state, ratio:maxRatio, kmInfo, dateInfo};
 }
 
-function statusLabel(st){
+function statusLabel(st, item, vehicle){
   if(st.state==='unset') return '尚未紀錄';
-  if(st.state==='overdue') return '已逾期';
-  if(st.state==='soon') return '即將到期';
-  return '狀況良好';
+  const parts=[];
+  if(st.kmInfo){
+    const remain = Math.round(st.kmInfo.nextKm - vehicle.odo);
+    parts.push(remain>=0 ? `還有${fmtKm(remain)}km` : `已超${fmtKm(-remain)}km`);
+  }
+  if(st.dateInfo){
+    const remainDays = Math.round((new Date(st.dateInfo.nextDate) - Date.now())/86400000);
+    parts.push(remainDays>=0 ? `還有${remainDays}天` : `已超${-remainDays}天`);
+  }
+  return parts.join('／') || (st.state==='overdue'?'已逾期':st.state==='soon'?'即將到期':'狀況良好');
 }
 
 function nextDueText(item, st){
@@ -472,7 +479,7 @@ function itemCardHtml(item, v){
       <div class="item-body" onclick="openEditItemModal('${item.id}')">
         <div class="item-top">
           <div class="item-name">${item.name}</div>
-          <div class="status-pill ${pillClass}">${statusLabel(st)}</div>
+          <div class="status-pill ${pillClass}">${statusLabel(st, item, v)}</div>
         </div>
         <div class="item-sub">${nextDueText(item, st)}</div>
         ${item.note?`<div class="hint">${item.note}</div>`:''}
