@@ -274,10 +274,11 @@ function defaultData(){
     {name:'定期驗車', category:'admin', intervalKm:null, intervalMonths:12, note:'未滿5年免驗，5~10年每年1次，滿10年每年2次'},
     {name:'牌照稅', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:4, fixedDay:30, note:'每年4月30日前，與里程無關'},
     {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:7, fixedDay:31, note:'每年7月31日前，與里程無關'},
+    {name:'玻璃鍍膜（擋風玻璃／側窗／後照鏡）', category:'engine', intervalKm:null, intervalMonths:4, note:'倒車鏡頭不要用一般玻璃鍍膜劑，需用鏡頭專用款或跳過；用Soft99 Glaco、Rain-X等疏水劑即可，DIY擦一次撐約3~6個月'},
     {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
   ];
-  function scooterItems(){
-    return [
+  function scooterItems(includeFuelAdditive){
+    const list = [
       {name:'機油', category:'engine', intervalKm:1000, intervalMonths:3, note:'原廠建議每1000公里更換一次（新車第一次300公里提前更換）'},
       {name:'齒輪油', category:'engine', intervalKm:3000, intervalMonths:6, note:'原廠建議每3000公里或6個月更換，以先到者為準'},
       {name:'空氣濾清器', category:'engine', intervalKm:5000, intervalMonths:6, note:'原廠建議每1000公里檢查清潔，每5000公里更換濾芯'},
@@ -286,10 +287,16 @@ function defaultData(){
       {name:'傳動系統（CVT濾綿／滾輪／皮帶）', category:'engine', intervalKm:5000, intervalMonths:6, note:'每5000公里檢查清潔CVT濾綿，皮帶約15000公里視磨損更換'},
       {name:'輪胎檢查／更換', category:'engine', intervalKm:null, intervalMonths:12, note:'胎壓：單人前1.75／後2.0，雙人前後2.25 kgf/cm²'},
       {name:'電瓶檢查', category:'engine', intervalKm:null, intervalMonths:12, note:'免保養電瓶，每年測電壓是否≥12V'},
+    ];
+    if(includeFuelAdditive){
+      list.push({name:'汽油精', category:'engine', intervalKm:1500, intervalMonths:3, note:'加進油箱，清潔噴油嘴／油路積碳，建議每1,500公里或每3個月加一次（每2~3次加油可加一次）'});
+    }
+    list.push(
       {name:'排氣定期檢驗', category:'admin', intervalKm:null, intervalMonths:12, note:'車齡滿5年才需每年檢驗一次'},
       {name:'燃料費', category:'admin', intervalKm:null, intervalMonths:12, fixedMonth:7, fixedDay:31, note:'每年7月31日前，與里程無關，約450元'},
       {name:'強制險', category:'admin', intervalKm:null, intervalMonths:12, note:'到期前記得續保'},
-    ];
+    );
+    return list;
   }
   function mkItems(list){
     return list.map(it=>({id:uid(), lastKm:null, lastDate:null, ...it}));
@@ -299,9 +306,9 @@ function defaultData(){
       {id:'v1', name:'小藍', model:'2018 Kia Picanto X-Line', type:'car', color:'car', odo:0, odoDate:today, createdAt:today,
         items:mkItems(carItems), logs:[], fuelLogs:[], fuelBenchmark:{good:13, bad:10}},
       {id:'v2', name:'機車8316', model:'2023 光陽 SZ25AA', type:'scooter', color:'8316', odo:0, odoDate:today, createdAt:today,
-        items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:38, bad:28}},
+        items:mkItems(scooterItems(true)), logs:[], fuelLogs:[], fuelBenchmark:{good:38, bad:28}},
       {id:'v3', name:'機車739', model:'光陽 V2 125', type:'scooter', color:'739', odo:0, odoDate:today, createdAt:today,
-        items:mkItems(scooterItems()), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
+        items:mkItems(scooterItems(false)), logs:[], fuelLogs:[], fuelBenchmark:{good:35, bad:25}},
     ],
     checklists:{
       car:{
@@ -737,6 +744,7 @@ function openEditItemModal(itemId){
 async function submitEditItem(itemId){
   const v = getVehicle(currentVehicleId);
   const it = v.items.find(i=>i.id===itemId);
+  const oldLastKm = it.lastKm, oldLastDate = it.lastDate;
   it.name = document.getElementById('eName').value.trim() || it.name;
   const kmInt = document.getElementById('eKmInt').value;
   const moInt = document.getElementById('eMoInt').value;
@@ -747,6 +755,15 @@ async function submitEditItem(itemId){
   it.lastKm = lastKm===''? null : parseFloat(lastKm);
   it.lastDate = lastDate || null;
   it.note = document.getElementById('eNote').value.trim() || null;
+
+  // 如果「上次保養」的日期或里程有變動，同步補一筆保養紀錄，這樣歷史紀錄裡也會看得到
+  const changed = (it.lastKm!==oldLastKm) || (it.lastDate!==oldLastDate);
+  if(changed && (it.lastKm!=null || it.lastDate!=null)){
+    v.logs = v.logs || [];
+    v.logs.push({id:uid(), date: it.lastDate || todayStr(), km: it.lastKm!=null ? it.lastKm : v.odo, itemIds:[it.id], itemNames:[it.name]});
+    if(it.lastKm!=null && it.lastKm > v.odo){ v.odo = it.lastKm; v.odoDate = it.lastDate || v.odoDate; }
+  }
+
   await saveData(); closeModal(); render(); showToast('已更新');
 }
 async function deleteItem(itemId){
